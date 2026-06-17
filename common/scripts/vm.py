@@ -13,6 +13,7 @@ import vmaddr
 import utils
 
 BIOS_DIR_NAME = 'pc-bios'
+BASE_IMGS_DIR_NAME = 'base_imgs'
 IMGS_DIR_NAME = 'imgs'
 COMMON_DIR_NAME = 'common'
 KERNEL_BINARY_NAME = 'bzImage'
@@ -43,10 +44,10 @@ def find_bios_dir():
     return utils.find_path(BIOS_DIR_NAME, True, 'bios dir')
 
 
-def find_image(name):
-    pattern = os.path.join(IMGS_DIR_NAME, '*{}*'.format(name))
-    return utils.find_path(pattern, False, 'compatible image')
-	
+def find_base_image():
+    base_imgs_dir = utils.find_path(BASE_IMGS_DIR_NAME, True, 'base images dir')
+    return utils.find_path('*.qcow2', False, 'base qcow2 image', parent=base_imgs_dir, recursive=False)
+
 
 def find_qemu_binary():
     return utils.find_path(QEMU_BINARY_NAME, False, 'QEMU binary')
@@ -120,7 +121,7 @@ def main():
 
     memory = args.memory if args.memory else calculate_memory()
     bios_dir = find_bios_dir()
-    img = args.img if args.img else find_image(args.name)
+    img = args.img if args.img else find_base_image()
     mac_address = vmaddr.vm_name_to_mac(args.name)
 
     qemu_args = [

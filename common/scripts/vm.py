@@ -6,6 +6,8 @@ import pathlib
 import os
 import subprocess
 import shlex
+import sys
+import termios
 
 import vmaddr
 import utils
@@ -17,6 +19,24 @@ KERNEL_BINARY_NAME = 'bzImage'
 QEMU_BINARY_NAME = 'qemu-system-x86_64'
 
 DEFAULT_MEMORY_BYTES = (4 << 30) # 4G
+
+# VT100 escape codes to reset terminal emulator software state upon exit:
+# \033[?7h  = DECAWM: Re-enable auto-wrapping
+# \033[?25h = DECTCEM: Show cursor
+# \033[0m   = SGR 0: Reset text colors
+VT100_RESET = '\033[?7h\033[?25h\033[0m\r'
+
+
+def save_host_termios():
+    try:
+        return termios.tcgetattr(sys.stdin.fileno())
+    except Exception:
+        return None
+
+
+def restore_host_termios(old_termios):
+    if old_termios is not None:
+        termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, old_termios)
 
 
 def find_bios_dir():
@@ -161,8 +181,14 @@ def main():
 
     if args.dry_run:
         print('QEMU command:', ' '.join(command))
-    else:
+        return
+
+    old_termios = save_host_termios()
+    try:
         subprocess.run(command)
+    finally:
+        print(VT100_RESET, end='', flush=True)
+        restore_host_termios(old_termios)
 
 
 if __name__ == '__main__':

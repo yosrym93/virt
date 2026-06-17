@@ -95,23 +95,27 @@ def calculate_memory():
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='vm.py', usage='%(prog)s [options]',
-                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)	
-    parser.add_argument('name', type=str, help='VM name')
-    parser.add_argument('-i', '--img', type=str, help='Path to image')
-    parser.add_argument('-m', '--memory', type=str)
-    parser.add_argument('-k', '--kernel-dir', type=str, help='Path to kernel directory')
-    parser.add_argument('-cmd', '--kernel-cmdline', type=str, default='', help='Kernel command line')
-    parser.add_argument('-s', '--smp', type=int, default=2, help='Number of vCPUs')
-    parser.add_argument('-c', '--cpu', type=str, default='host', help='QEMU "-cpu" arg')
-    parser.add_argument('-n', '--network', type=str, default='tap', help='VM network type')
-    parser.add_argument('-p', '--persistent', action='store_true', help='Run VM persistently (do not use -snapshot)')
-    parser.add_argument('-d', '--daemonize', action='store_true', help='Whether to deamonize QEMU')
-    parser.add_argument('--machine', type=str, default='type=q35', help='QEMU "-machine" arg')
-    parser.add_argument('--format', type=str, default='qcow2', help='Image format')
-    parser.add_argument('--no-kvm', action='store_true', help='Do not use KVM')
-    parser.add_argument('--dry-run', action='store_true', help='Create the QEMU command only')
-    parser.add_argument('--extra-args', type=str, help='Extra args to pass to QEMU')
+    parser = argparse.ArgumentParser(prog='vm.py',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    subparsers = parser.add_subparsers(dest='subcommand', required=True, help='Subcommands')
+
+    run_parser = subparsers.add_parser('run', help='Run a VM',
+                                       formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    run_parser.add_argument('name', type=str, help='VM name')
+    run_parser.add_argument('-i', '--img', type=str, help='Path to image')
+    run_parser.add_argument('-m', '--memory', type=str, help='Memory size')
+    run_parser.add_argument('-k', '--kernel-dir', type=str, help='Path to kernel directory')
+    run_parser.add_argument('-cmd', '--kernel-cmdline', type=str, default='', help='Kernel command line')
+    run_parser.add_argument('-s', '--smp', type=int, default=2, help='Number of vCPUs')
+    run_parser.add_argument('-c', '--cpu', type=str, default='host', help='QEMU "-cpu" arg')
+    run_parser.add_argument('-n', '--network', type=str, default='tap', help='VM network type')
+    run_parser.add_argument('-p', '--persistent', action='store_true', help='Run VM persistently (do not use -snapshot)')
+    run_parser.add_argument('-d', '--daemonize', action='store_true', help='Whether to deamonize QEMU')
+    run_parser.add_argument('--machine', type=str, default='type=q35', help='QEMU "-machine" arg')
+    run_parser.add_argument('--format', type=str, default='qcow2', help='Image format')
+    run_parser.add_argument('--no-kvm', action='store_true', help='Do not use KVM')
+    run_parser.add_argument('--dry-run', action='store_true', help='Create the QEMU command only')
+    run_parser.add_argument('--extra-args', type=str, help='Extra args to pass to QEMU')
     args = parser.parse_args()
 
     memory = args.memory if args.memory else calculate_memory()

@@ -141,9 +141,16 @@ def main():
 
     common_dir = find_common_dir()
     if common_dir:
+        common_path = pathlib.Path(common_dir).resolve()
+        repo_root = common_path.parent
+        imgs_dir = common_path / IMGS_DIR_NAME
+        imgs_dir.mkdir(parents=True, exist_ok=True)
+
         qemu_args += [
-                '-fsdev'	, 'local,path={},security_model=passthrough,readonly=on,id=common9p'.format(common_dir),
-                '-device'	, 'virtio-9p-pci,fsdev=common9p,mount_tag=common',
+                '-fsdev'	, f'local,path={repo_root},security_model=passthrough,readonly=on,id=fsdev-root',
+                '-device'	, 'virtio-9p-pci,fsdev=fsdev-root,mount_tag=virt_root',
+                '-fsdev'	, f'local,path={imgs_dir},security_model=passthrough,readonly=off,id=fsdev-imgs',
+                '-device'	, 'virtio-9p-pci,fsdev=fsdev-imgs,mount_tag=virt_imgs',
                 ]
 
     command = [str(find_qemu_binary())] + qemu_args

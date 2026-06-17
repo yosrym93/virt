@@ -1,0 +1,11 @@
+[Unit]
+Description=Virt Guest Initialization Service
+After=network.target local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /usr/local/bin/virt_init.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

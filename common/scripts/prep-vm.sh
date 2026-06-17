@@ -6,6 +6,15 @@ set -x
 SCRIPT_DIR="$(dirname $0)"
 PREP_COMMON="${SCRIPT_DIR}/prep-common.sh"
 
+# Set VM hostname from SMBIOS DMI tables injected by QEMU (-smbios type=1,product=...)
+if [ -r /sys/class/dmi/id/product_name ]; then
+    VM_NAME=$(cat /sys/class/dmi/id/product_name 2>/dev/null | tr -d '\n')
+    if [[ -n "$VM_NAME" && "$VM_NAME" != "Standard PC"* && "$VM_NAME" != "Boachs"* ]]; then
+        hostname "$VM_NAME" 2>/dev/null || true
+        echo "$VM_NAME" > /etc/hostname 2>/dev/null || true
+    fi
+fi
+
 # Remove root password completely for console login access
 passwd -d root 2>/dev/null || true
 

@@ -104,6 +104,8 @@ def main():
             '-smp'		, str(args.smp),
             '-m'		, memory,
             '-L'		, str(bios_dir),
+            # Pass VM name in SMBIOS DMI tables so guest virt_init.sh can dynamically set hostname
+            '-smbios'	, f'type=1,product={args.name}',
             '-drive'	, 'file={},format={},if=none,id=drive'.format(img, args.format),
             '-device'	, 'virtio-blk-pci,drive=drive,id=virtblk',
             ]

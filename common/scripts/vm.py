@@ -105,6 +105,7 @@ def main():
     parser.add_argument('-s', '--smp', type=int, default=2, help='Number of vCPUs')
     parser.add_argument('-c', '--cpu', type=str, default='host', help='QEMU "-cpu" arg')
     parser.add_argument('-n', '--network', type=str, default='tap', help='VM network type')
+    parser.add_argument('-p', '--persistent', action='store_true', help='Run VM persistently (do not use -snapshot)')
     parser.add_argument('-d', '--daemonize', action='store_true', help='Whether to deamonize QEMU')
     parser.add_argument('--machine', type=str, default='type=q35', help='QEMU "-machine" arg')
     parser.add_argument('--format', type=str, default='qcow2', help='Image format')
@@ -129,6 +130,9 @@ def main():
             '-drive'	, 'file={},format={},if=none,id=drive'.format(img, args.format),
             '-device'	, 'virtio-blk-pci,drive=drive,id=virtblk',
             ]
+
+    if not args.persistent:
+        qemu_args += ['-snapshot']
 
     qemu_args += ['-daemonize'] if args.daemonize else ['-nographic']
 

@@ -1,0 +1,14 @@
+# Large binary disk images
+common/base_imgs/
+common/imgs/
+
+# Bundled local QEMU binaries and firmware
+common/qemu/*
+
+# Runtime state and Python cache
+__pycache__/
+*.pyc
+
+# Prebuilt and test binary directories
+common/bin/
+common/tests/

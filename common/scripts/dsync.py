@@ -73,8 +73,7 @@ def main():
 
     common_dir = utils.find_path('common', True, 'Common directory')
     repo_root = pathlib.Path(common_dir).resolve().parent
-    rsync(repo_root / 'common', f"{ssh_host}:{remote_repo}/", delete=False, excludes=['imgs', 'imgs/*'])
-    rsync(repo_root / 'scripts', f"{ssh_host}:{remote_repo}/", delete=True)
+    rsync(repo_root / 'common', f"{ssh_host}:{remote_repo}/", delete=False)
 
     print(f"=== Executing prep-host.sh on {args.machine} ===")
     prep_script = f"{remote_repo}/common/scripts/prep-host.sh"

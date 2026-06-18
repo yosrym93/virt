@@ -14,7 +14,6 @@ import utils
 
 BIOS_DIR_NAME = 'pc-bios'
 BASE_IMGS_DIR_NAME = 'base_imgs'
-IMGS_DIR_NAME = 'imgs'
 COMMON_DIR_NAME = 'common'
 KERNEL_BINARY_NAME = 'bzImage'
 QEMU_BINARY_NAME = 'qemu-system-x86_64'
@@ -175,14 +174,10 @@ def cmd_run(args):
     if common_dir:
         common_path = pathlib.Path(common_dir).resolve()
         repo_root = common_path.parent
-        imgs_dir = common_path / IMGS_DIR_NAME
-        imgs_dir.mkdir(parents=True, exist_ok=True)
 
         qemu_args += [
                 '-fsdev'	, f'local,path={repo_root},security_model=passthrough,readonly=on,id=fsdev-root',
                 '-device'	, 'virtio-9p-pci,fsdev=fsdev-root,mount_tag=virt_root',
-                '-fsdev'	, f'local,path={imgs_dir},security_model=passthrough,readonly=off,id=fsdev-imgs',
-                '-device'	, 'virtio-9p-pci,fsdev=fsdev-imgs,mount_tag=virt_imgs',
                 ]
 
     command = [str(find_qemu_binary())] + qemu_args

@@ -57,16 +57,6 @@ def find_common_dir():
     return utils.find_path(COMMON_DIR_NAME, True, 'Common dir', recursive=False)
 
 
-def find_kernel_binary(kernel_dir):
-    return utils.find_path(KERNEL_BINARY_NAME, False, 'kernel binary (bzImage)',
-                     parent=kernel_dir, allow_dup=True)
-
-
-def find_modules_dir(kernel_dir):
-    pattern = os.path.join('lib', 'modules', '*')
-    return utils.find_path(pattern, True, 'modules dir',
-                     parent=kernel_dir)
-
 def calculate_memory():
 	# Find the amount of free memory
 	free_bytes = None
@@ -154,9 +144,11 @@ def cmd_run(args):
         print('Only tap networking is supported')
         exit(-1)
    
-    if args.kernel_dir:
-        kernel_binary = find_kernel_binary(args.kernel_dir)
-        modules_dir = find_modules_dir(args.kernel_dir)
+    if args.kernel:
+        search_dir = args.kernel_search_dir if args.kernel_search_dir else find_common_dir()
+        kernel_dir = utils.resolve_kernel_dir(args.kernel, search_dir)
+        kernel_binary = utils.find_kernel_binary(kernel_dir, args.kernel_binary)
+        modules_dir = utils.find_modules_dir(kernel_dir)
         cmdline = args.kernel_cmdline
         if 'root=' not in cmdline:
             cmdline += ' root=/dev/vda1'
@@ -198,18 +190,22 @@ def cmd_run(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(prog='vm.py',
+    base_parser = argparse.ArgumentParser(add_help=False)
+    base_parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose debugging output')
+
+    parser = argparse.ArgumentParser(prog='vm.py', parents=[base_parser],
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose debugging output')
     subparsers = parser.add_subparsers(dest='subcommand', help='Subcommands')
     subparsers.required = True
 
-    run_parser = subparsers.add_parser('run', help='Run a VM',
+    run_parser = subparsers.add_parser('run', parents=[base_parser], help='Run a VM',
                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     run_parser.add_argument('name', type=str, help='VM name')
     run_parser.add_argument('-i', '--img', type=str, help='Path to image')
     run_parser.add_argument('-m', '--memory', type=str, help='Memory size')
-    run_parser.add_argument('-k', '--kernel-dir', type=str, help='Path to kernel directory')
+    run_parser.add_argument('-k', '--kernel', type=str, help='Specific kernel name or path to run')
+    run_parser.add_argument('-ks', '--kernel-search-dir', default=None, help='Parent directory to search for kernel builds (default: common directory)')
+    run_parser.add_argument('--kernel-binary', default='bzImage', help='Kernel binary executable filename')
     run_parser.add_argument('-cmd', '--kernel-cmdline', type=str, default='', help='Kernel command line')
     run_parser.add_argument('-s', '--smp', type=int, default=2, help='Number of vCPUs')
     run_parser.add_argument('-c', '--cpu', type=str, default='host', help='QEMU "-cpu" arg')
@@ -223,11 +219,11 @@ def main():
     run_parser.add_argument('--extra-args', type=str, help='Extra args to pass to QEMU')
     run_parser.set_defaults(func=cmd_run)
 
-    kill_parser = subparsers.add_parser('kill', help='Kill a running VM')
+    kill_parser = subparsers.add_parser('kill', parents=[base_parser], help='Kill a running VM')
     kill_parser.add_argument('name', type=str, help='VM name')
     kill_parser.set_defaults(func=cmd_kill)
 
-    ssh_parser = subparsers.add_parser('ssh', help='SSH into a running VM')
+    ssh_parser = subparsers.add_parser('ssh', parents=[base_parser], help='SSH into a running VM')
     ssh_parser.add_argument('name', type=str, help='VM name')
     ssh_parser.add_argument('ssh_args', nargs=argparse.REMAINDER, help='Extra SSH arguments')
     ssh_parser.set_defaults(func=cmd_ssh)

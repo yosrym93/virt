@@ -11,9 +11,11 @@ import utils
 SSH_OPTS = ['-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'LogLevel=ERROR']
 
 
-def rsync(*args, delete=False, excludes=None):
+def rsync(*args, delete=False, excludes=None, copy_links=False):
     ssh_rsh = 'ssh ' + ' '.join(SSH_OPTS)
     cmd = ['rsync', '-az', '--progress', '-e', ssh_rsh]
+    if copy_links:
+        cmd.append('--copy-links')
     if delete:
         cmd.append('--delete')
     if excludes:
@@ -24,23 +26,13 @@ def rsync(*args, delete=False, excludes=None):
     subprocess.run(cmd, check=True)
 
 
-def resolve_kernel_dir(kernel_arg, bin_name):
-    # Stage 1: Check if kernel_arg is an explicit absolute or relative path
-    p = pathlib.Path(kernel_arg).expanduser()
-    if p.exists() and p.is_dir() and utils.find_path(bin_name, False, 'Kernel binary', parent=p, allow_zero=True):
-        return p.resolve()
-
-    # Stage 2: If kernel_arg is just a build folder name, search home directory for it
-    res = utils.find_path(kernel_arg, True, 'Kernel build directory', parent=pathlib.Path.home())
-    return pathlib.Path(res).resolve()
-
-
 def main():
     parser = argparse.ArgumentParser(prog='dsync.py',
                                      description='Synchronize local virt workspace with a remote development machine',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('machine', help='Remote target host machine (e.g. mymachine)')
     parser.add_argument('-k', '--kernel', type=str, help='Specific kernel name or path to synchronize (skips full workspace sync)')
+    parser.add_argument('-ks', '--kernel-search-dir', default='~/builds', help='Parent directory to search for kernel builds')
     parser.add_argument('--kernel-binary', default='bzImage', help='Kernel binary executable filename to search for')
     parser.add_argument('-p', '--remote-path', type=str, help='Override remote destination repository path')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose execution and debugging output')
@@ -53,23 +45,23 @@ def main():
     ssh_host = f"root@{args.machine}"
 
     if args.kernel:
-        kernel_dir = resolve_kernel_dir(args.kernel, args.kernel_binary)
+        kernel_dir = utils.resolve_kernel_dir(args.kernel, args.kernel_search_dir)
         name = kernel_dir.name
         print(f"=== Synchronizing kernel build '{name}' to {args.machine} ===")
         remote_kernel_dir = f"{remote_repo}/common/kernel/{name}"
         subprocess.run(['ssh'] + SSH_OPTS + [ssh_host, f"mkdir -p {remote_kernel_dir}"], check=True)
 
-        kernel_bin = utils.find_path(args.kernel_binary, False, 'Kernel binary', parent=kernel_dir)
-        modules = utils.find_path('lib', True, 'Kernel modules', parent=kernel_dir, allow_zero=True)
-        selftests = utils.find_path('selftests', True, 'Kernel selftests', parent=kernel_dir, allow_zero=True)
+        kernel_bin = utils.find_kernel_binary(kernel_dir, args.kernel_binary)
+        modules_dir = utils.find_modules_dir(kernel_dir)
+        selftests = utils.find_path('selftests', True, 'Kernel selftests', parent=kernel_dir, recursive=False, allow_zero=True)
 
         srcs = [kernel_bin]
-        if modules:
-            srcs.append(modules)
+        if modules_dir:
+            srcs.append(modules_dir.parent.parent)
         if selftests:
             srcs.append(selftests)
 
-        rsync(*srcs, f"{ssh_host}:{remote_kernel_dir}/", delete=True)
+        rsync(*srcs, f"{ssh_host}:{remote_kernel_dir}/", delete=True, copy_links=True)
         return
 
     print(f"=== Synchronizing repository workspace to {args.machine} ===")

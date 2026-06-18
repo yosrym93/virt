@@ -13,10 +13,6 @@ mkdir -p /virt
 # Mount shared root directory read-only
 mount -t 9p -o trans=virtio virt_root /virt
 
-mkdir -p /virt/common/imgs
-# Mount working image overlays read-write
-mount -t 9p -o trans=virtio virt_imgs /virt/common/imgs
-
 if [ ! -x /virt/common/scripts/prep-vm.sh ]; then
     echo "ERROR: /virt/common/scripts/prep-vm.sh is missing or not executable!" >&2
     exit 1

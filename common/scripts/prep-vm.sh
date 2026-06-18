@@ -22,6 +22,9 @@ passwd -d root 2>/dev/null || true
 sed -i 's/^#*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config 2>/dev/null || true
 sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config 2>/dev/null || true
 
+mkdir -p /virt/common/imgs
+mount -t 9p -o trans=virtio virt_imgs /virt/common/imgs
+
 # If the modules directory is exposed through QEMU, mount it.
 # The rest of the setup is the same as preping the host.
 if grep -ac kmodules /sys/bus/virtio/drivers/9pnet_virtio/virtio*/mount_tag; then

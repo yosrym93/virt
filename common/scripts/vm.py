@@ -7,6 +7,7 @@ import pathlib
 import os
 import subprocess
 import shlex
+import signal
 import sys
 import termios
 
@@ -105,15 +106,28 @@ def qualify_vm_name(name):
     return f"{parent_name}-{name}" if parent_name else name
 
 
+def check_vm_running(name):
+    res = subprocess.run(['pgrep', '-f', f'product={name}(,|$)'], capture_output=True, text=True)
+    if res.returncode != 0:
+        logging.error("Error: VM '%s' is not running.", name)
+        sys.exit(1)
+
+    pids = [int(p) for p in res.stdout.split()]
+    if len(pids) > 1:
+        logging.error("Error: Multiple QEMU processes found for VM '%s': %s", name, pids)
+        sys.exit(1)
+
+    return pids[0]
+
+
 def cmd_kill(args):
-    res = subprocess.run(['pkill', '-f', f'product={args.name}'])
-    if res.returncode == 0:
-        print(f"Terminated VM '{args.name}'")
-    else:
-        print(f"No running QEMU process found for VM '{args.name}'")
+    pid = check_vm_running(args.name)
+    os.kill(pid, signal.SIGTERM)
+    print(f"Terminated VM '{args.name}'")
 
 
 def cmd_ssh(args):
+    check_vm_running(args.name)
     ipv6 = vmaddr.vm_name_to_ipv6_local(args.name)
     target = f"root@{ipv6}%{BRIDGE_IFACE_NAME}"
     identity_file = find_ssh_identity_file()

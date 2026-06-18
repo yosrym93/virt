@@ -12,6 +12,8 @@ INIT_SCRIPT_NAME = 'virt_init.sh'
 INIT_SERVICE_NAME = 'virt-init.service'
 SERIAL_AUTOLOGIN_CONF_NAME = 'serial_autologin.conf'
 
+DEFAULT_PACKAGES = ['netperf']
+
 
 def check_required_tools():
     for tool in ['qemu-img', 'virt-customize']:
@@ -29,6 +31,7 @@ def main():
     parser.add_argument('-i', '--input', type=str, required=True, help='Path to downloaded stock cloud image (e.g. ubuntu.img)')
     parser.add_argument('-o', '--output', type=str, required=True, help='Target path for prepared base image (e.g. common/base_imgs/base.qcow2)')
     parser.add_argument('-sk', '--ssh-pubkey', type=str, required=True, help='Path to SSH public key to inject into authorized_keys')
+    parser.add_argument('-p', '--packages', nargs='*', default=DEFAULT_PACKAGES, help='List of packages to install via apt/dnf/pacman inside the image')
     parser.add_argument('-f', '--force', action='store_true', help='Overwrite output image if it already exists')
     args = parser.parse_args()
 
@@ -83,6 +86,11 @@ def main():
         '--upload', f'{autologin_conf}:/etc/systemd/system/serial-getty@ttyS0.service.d/autologin.conf',
         '--run-command', 'systemctl enable virt-init.service',
     ]
+
+    if args.packages:
+        pkgs = ','.join(args.packages)
+        print(f"Installing offline packages into base image: {pkgs}")
+        customize_cmd.extend(['--update', '--install', pkgs])
 
     subprocess.run(customize_cmd, check=True)
     print("\nBase image prepared successfully!")

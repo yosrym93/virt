@@ -27,10 +27,10 @@ mount -t 9p -o trans=virtio virt_imgs /virt/common/imgs
 
 # If the modules directory is exposed through QEMU, mount it.
 # The rest of the setup is the same as preping the host.
-if grep -ac kmodules /sys/bus/virtio/drivers/9pnet_virtio/virtio*/mount_tag; then
+if grep -ac virt_kmods /sys/bus/virtio/drivers/9pnet_virtio/virtio*/mount_tag; then
   modules_dir="/lib/modules/$(uname -r)"
   mkdir -p $modules_dir
-  mount -t 9p -o trans=virtio kmodules $modules_dir
+  mount -t 9p -o trans=virtio virt_kmods $modules_dir
 fi
 
 # Add /virt/common/scripts and /virt/common/bin to $PATH in ~/.bashrc

@@ -150,8 +150,8 @@ def cmd_run(args):
                 '-kernel'	, str(kernel_binary),
                 '-append'	, cmdline,
                 '-bios'		, 'qboot.rom',  # qboot is faster and does not mess up the terminal
-                '-fsdev'	, 'local,path={},security_model=passthrough,readonly=on,id=mod9p'.format(modules_dir),
-                '-device'	, 'virtio-9p-pci,fsdev=mod9p,mount_tag=kmodules',
+                '-fsdev'	, 'local,path={},security_model=passthrough,readonly=on,id=fsdev-kmods'.format(modules_dir),
+                '-device'	, 'virtio-9p-pci,fsdev=fsdev-kmods,mount_tag=virt_kmods',
                 ]
 
 

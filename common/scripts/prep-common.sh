@@ -4,11 +4,11 @@ set -e
 set -x
 
 if ! ip link show tap0 >/dev/null 2>&1; then
-	ip tuntap add dev tap0 mode tap
+	ip tuntap add dev tap0 mode tap 2>/dev/null || true
 fi
 
 if ! ip link show tap0 | grep UP; then
-	ip link set dev tap0 up
+	ip link set dev tap0 up 2>/dev/null || true
 fi
 
 if grep -iq intel /proc/cpuinfo; then
@@ -20,15 +20,15 @@ else
   exit 1
 fi
 
-modprobe kvm
+modprobe kvm 2>/dev/null || true
 
 if lsmod | grep -wq $mod; then
 	# If the vendor module is loaded without nested=1, reload it with it.
-	if grep 0 /sys/module/$mod/parameters/nested; then
-		rmmod $mod
-		modprobe $mod nested=1
+	if grep -q 0 /sys/module/$mod/parameters/nested 2>/dev/null; then
+		rmmod $mod 2>/dev/null || true
+		modprobe $mod nested=1 2>/dev/null || true
 	fi
 else
 	# If the vendor module is not loaded at all, load it with nested=1.
-	modprobe $mod nested=1
+	modprobe $mod nested=1 2>/dev/null || true
 fi

@@ -39,3 +39,20 @@ if ! grep -q "PATH=\"/virt/common/scripts:/virt/common/bin:\$PATH\"" ~/.bashrc; 
 fi
 
 $PREP_COMMON
+
+# Enslave primary hardware NIC to br_virt and copy its MAC address to the bridge interface.
+# Enslaving strips IP reception from the NIC, so br_virt must inherit the deterministic QEMU MAC
+# (52:54:...) to ensure vmaddr.py calculates the correct matching EUI-64 IPv6 address.
+for dev in /sys/class/net/*/device; do
+    if [ -e "$dev" ]; then
+        iface=$(basename $(dirname "$dev"))
+        mac=$(cat "/sys/class/net/$iface/address")
+        ip link set dev "$iface" master br_virt
+        ip addr flush dev "$iface"
+        ip link set dev br_virt address "$mac"
+        ip addr flush dev br_virt
+        ip link set dev br_virt down
+        ip link set dev br_virt up
+        break
+    fi
+done

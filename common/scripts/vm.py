@@ -18,6 +18,7 @@ BASE_IMGS_DIR_NAME = 'base_imgs'
 COMMON_DIR_NAME = 'common'
 KERNEL_BINARY_NAME = 'bzImage'
 QEMU_BINARY_NAME = 'qemu-system-x86_64'
+BRIDGE_IFACE_NAME = 'br_virt'
 
 DEFAULT_MEMORY_BYTES = (4 << 30) # 4G
 
@@ -85,10 +86,6 @@ def calculate_memory():
 	return vm_bytes
 
 
-def get_tap_iface(vm_name):
-    return f"tap_{vm_name}"[:15]
-
-
 def cmd_kill(args):
     res = subprocess.run(['pkill', '-f', f'product={args.name}'])
     if res.returncode == 0:
@@ -98,9 +95,8 @@ def cmd_kill(args):
 
 
 def cmd_ssh(args):
-    iface = get_tap_iface(args.name)
     ipv6 = vmaddr.vm_name_to_ipv6_local(args.name)
-    target = f"root@{ipv6}%{iface}"
+    target = f"root@{ipv6}%{BRIDGE_IFACE_NAME}"
     common_dir = find_common_dir()
     identity_file = pathlib.Path(common_dir) / 'ssh' / 'ida_rsa'
     ssh_cmd = ['ssh']
@@ -139,7 +135,7 @@ def cmd_run(args):
         qemu_args += ['-enable-kvm']
 
     if args.network == 'tap':
-        ifname = get_tap_iface(args.name)
+        ifname = f"tap_{args.name}"[:15]
         ifup_script = pathlib.Path(__file__).resolve().parent / 'ifup.sh'
         qemu_args += [
                 '-netdev'   , f'tap,id=net0,ifname={ifname},script={ifup_script},downscript=no',

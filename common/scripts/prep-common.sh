@@ -24,3 +24,9 @@ else
 	# If the vendor module is not loaded at all, load it with nested=1.
 	modprobe $mod nested=1 2>/dev/null || true
 fi
+
+# Create software bridge switch if it does not exist (avoids RTNETLINK File exists error)
+if ! ip link show dev br_virt >/dev/null 2>&1; then
+	ip link add br_virt type bridge
+fi
+ip link set br_virt up

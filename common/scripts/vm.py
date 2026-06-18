@@ -103,7 +103,12 @@ def cmd_ssh(args):
     target = f"root@{ipv6}%{iface}"
     common_dir = find_common_dir()
     identity_file = pathlib.Path(common_dir) / 'ssh' / 'ida_rsa'
-    ssh_cmd = ['ssh', '-q', '-i', str(identity_file), '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'LogLevel=QUIET', '-o', 'IPQoS=none', target] + args.ssh_args
+    ssh_cmd = ['ssh']
+    if args.verbose:
+        ssh_cmd.append('-v')
+    else:
+        ssh_cmd.extend(['-q', '-o', 'LogLevel=QUIET'])
+    ssh_cmd.extend(['-i', str(identity_file), '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'IPQoS=none', target] + args.ssh_args)
     os.execvp('ssh', ssh_cmd)
 
 

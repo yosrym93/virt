@@ -90,7 +90,7 @@ def main():
     if args.packages:
         pkgs = ','.join(args.packages)
         print(f"Installing offline packages into base image: {pkgs}")
-        customize_cmd.extend(['--update', '--install', pkgs])
+        customize_cmd.extend(['--install', pkgs])
 
     subprocess.run(customize_cmd, check=True)
     print("\nBase image prepared successfully!")

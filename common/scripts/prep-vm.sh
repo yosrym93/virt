@@ -22,6 +22,21 @@ passwd -d root 2>/dev/null || true
 sed -i 's/^#*PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config 2>/dev/null || true
 sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication yes/' /etc/ssh/sshd_config 2>/dev/null || true
 
+# Mask cloud DHCP wait services and cloud-init
+SERVICES_TO_MASK=(
+    systemd-networkd-wait-online.service
+    NetworkManager-wait-online.service
+    cloud-init.service
+    cloud-config.service
+    cloud-final.service
+    cloud-init-local.service
+)
+for svc in "${SERVICES_TO_MASK[@]}"; do
+    if systemctl cat "$svc" >/dev/null 2>&1; then
+        systemctl mask "$svc"
+    fi
+done
+
 # If the modules directory is exposed through QEMU, mount it.
 # The rest of the setup is the same as preping the host.
 if grep -ac virt_kmods /sys/bus/virtio/drivers/9pnet_virtio/virtio*/mount_tag; then

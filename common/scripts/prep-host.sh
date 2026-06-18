@@ -38,6 +38,15 @@ for script in "${SCRIPTS_DIR}"/*; do
     fi
 done
 
+ALIASES_DIR="${COMMON_DIR}/aliases"
+echo "Linking aliases to ${TARGET_BIN}"
+for alias_script in "${ALIASES_DIR}"/*; do
+    if [ -f "$alias_script" ]; then
+        chmod +x "$alias_script" 2>/dev/null || true
+        sudo ln -sf "$alias_script" "${TARGET_BIN}/$(basename "$alias_script")"
+    fi
+done
+
 # 3. Link Toybox utils
 echo "Creating symlinks for toybox utils"
 for cmd in "${TOYBOX_UTILS[@]}"; do

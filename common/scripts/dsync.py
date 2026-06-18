@@ -51,7 +51,7 @@ def main():
         remote_kernel_dir = f"{remote_repo}/common/kernel/{name}"
         subprocess.run(['ssh'] + SSH_OPTS + [ssh_host, f"mkdir -p {remote_kernel_dir}"], check=True)
 
-        kernel_bin = utils.find_kernel_binary(kernel_dir, args.kernel_binary)
+        kernel_bin = pathlib.Path(utils.find_kernel_binary(kernel_dir, args.kernel_binary)).resolve()
         modules_dir = utils.find_modules_dir(kernel_dir)
         selftests = utils.find_path('selftests', True, 'Kernel selftests', parent=kernel_dir, recursive=False, allow_zero=True)
 
@@ -61,7 +61,7 @@ def main():
         if selftests:
             srcs.append(selftests)
 
-        rsync(*srcs, f"{ssh_host}:{remote_kernel_dir}/", delete=True, copy_links=True)
+        rsync(*srcs, f"{ssh_host}:{remote_kernel_dir}/", delete=True, excludes=['build', 'source'])
         return
 
     print(f"=== Synchronizing repository workspace to {args.machine} ===")

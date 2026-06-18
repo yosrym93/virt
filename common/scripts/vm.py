@@ -107,7 +107,7 @@ def qualify_vm_name(name):
 
 
 def check_vm_running(name):
-    res = subprocess.run(['pgrep', '-f', f'product={name}(,|$)'], capture_output=True, text=True)
+    res = subprocess.run(['pgrep', '-f', f'product={name}([, ]|$)'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     if res.returncode != 0:
         logging.error("Error: VM '%s' is not running.", name)
         sys.exit(1)
@@ -138,6 +138,30 @@ def cmd_ssh(args):
         ssh_cmd.extend(['-q', '-o', 'LogLevel=QUIET'])
     ssh_cmd.extend(['-i', str(identity_file), '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'IPQoS=none', target] + args.ssh_args)
     os.execvp('ssh', ssh_cmd)
+
+
+def expand_scp_target(arg):
+    if ':' not in arg or arg.startswith('-'):
+        return arg
+
+    vm_name, path_part = arg.split(':', 1)
+    check_vm_running(vm_name)
+    qualified_name = qualify_vm_name(vm_name)
+    ipv6 = vmaddr.vm_name_to_ipv6_local(qualified_name)
+    return f"root@[{ipv6}%{BRIDGE_IFACE_NAME}]:{path_part}"
+
+
+def cmd_scp(args):
+    identity_file = find_ssh_identity_file()
+    scp_cmd = ['scp']
+    if args.verbose:
+        scp_cmd.append('-v')
+    else:
+        scp_cmd.extend(['-q', '-o', 'LogLevel=QUIET'])
+
+    expanded_args = [expand_scp_target(a) for a in args.scp_args]
+    scp_cmd.extend(['-i', str(identity_file), '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'IPQoS=none'] + expanded_args)
+    os.execvp('scp', scp_cmd)
 
 
 def cmd_run(args):
@@ -261,8 +285,23 @@ def main():
     ssh_parser.add_argument('ssh_args', nargs=argparse.REMAINDER, help='Extra SSH arguments')
     ssh_parser.set_defaults(func=cmd_ssh)
 
+    scp_desc = (
+        "Transfer files between host and VMs or directly between two VMs.\n\n"
+        "Examples:\n"
+        "  vm.py scp vm1:/root/test.txt .\n"
+        "  vm.py scp -r ./artifacts vm1:/tmp/\n"
+        "  vm.py scp vm1:/var/log/syslog vm2:/tmp/vm1_syslog"
+    )
+    scp_parser = subparsers.add_parser('scp', parents=[base_parser],
+                                       formatter_class=argparse.RawDescriptionHelpFormatter,
+                                       help='SCP files to/from a running VM',
+                                       description=scp_desc)
+    scp_parser.add_argument('scp_args', nargs=argparse.REMAINDER, help='Extra SCP arguments')
+    scp_parser.set_defaults(func=cmd_scp)
+
     args = parser.parse_args()
-    args.name = qualify_vm_name(args.name)
+    if hasattr(args, 'name'):
+        args.name = qualify_vm_name(args.name)
     logging.basicConfig(format='%(message)s', level=logging.INFO if args.verbose else logging.WARNING)
     args.func(args)
 

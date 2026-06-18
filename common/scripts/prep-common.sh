@@ -3,14 +3,6 @@
 set -e
 set -x
 
-if ! ip link show tap0 >/dev/null 2>&1; then
-	ip tuntap add dev tap0 mode tap 2>/dev/null || true
-fi
-
-if ! ip link show tap0 | grep UP; then
-	ip link set dev tap0 up 2>/dev/null || true
-fi
-
 if grep -iq intel /proc/cpuinfo; then
   mod=kvm_intel
 elif grep -iq amd /proc/cpuinfo; then

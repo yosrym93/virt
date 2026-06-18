@@ -95,12 +95,26 @@ def calculate_memory():
 	return vm_bytes
 
 
+def get_tap_iface(vm_name):
+    return f"tap_{vm_name}"[:15]
+
+
 def cmd_kill(args):
     res = subprocess.run(['pkill', '-f', f'product={args.name}'])
     if res.returncode == 0:
         print(f"Terminated VM '{args.name}'")
     else:
         print(f"No running QEMU process found for VM '{args.name}'")
+
+
+def cmd_ssh(args):
+    iface = get_tap_iface(args.name)
+    ipv6 = vmaddr.vm_name_to_ipv6_local(args.name)
+    target = f"root@{ipv6}%{iface}"
+    common_dir = find_common_dir()
+    identity_file = pathlib.Path(common_dir) / 'ssh' / 'ida_rsa'
+    ssh_cmd = ['ssh', '-i', str(identity_file), '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'LogLevel=ERROR', target] + args.ssh_args
+    os.execvp('ssh', ssh_cmd)
 
 
 def cmd_run(args):
@@ -130,8 +144,10 @@ def cmd_run(args):
         qemu_args += ['-enable-kvm']
 
     if args.network == 'tap':
+        ifname = get_tap_iface(args.name)
+        ifup_script = pathlib.Path(__file__).resolve().parent / 'ifup.sh'
         qemu_args += [
-                '-netdev'   , 'tap,id=net0,ifname=tap0,script=no,downscript=no',
+                '-netdev'   , f'tap,id=net0,ifname={ifname},script={ifup_script},downscript=no',
                 '-device'   , 'virtio-net-pci,netdev=net0,mac={}'.format(mac_address),
             ]
     elif args.network:
@@ -212,6 +228,11 @@ def main():
     kill_parser = subparsers.add_parser('kill', help='Kill a running VM')
     kill_parser.add_argument('name', type=str, help='VM name')
     kill_parser.set_defaults(func=cmd_kill)
+
+    ssh_parser = subparsers.add_parser('ssh', help='SSH into a running VM')
+    ssh_parser.add_argument('name', type=str, help='VM name')
+    ssh_parser.add_argument('ssh_args', nargs=argparse.REMAINDER, help='Extra SSH arguments')
+    ssh_parser.set_defaults(func=cmd_ssh)
 
     args = parser.parse_args()
     args.func(args)

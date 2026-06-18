@@ -74,7 +74,4 @@ if ! egrep -q "QEMU.*${QEMU}" ~/.bashrc; then
 fi
 '
 
-# Generate SSH configs for L1 and L2
-$SCRIPTS_DIR/gen_ssh_config.py l1,l2
-
 $PREP_COMMON

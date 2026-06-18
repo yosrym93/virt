@@ -2,6 +2,7 @@
 
 import argparse
 import getpass
+import logging
 import pathlib
 import subprocess
 import sys
@@ -19,7 +20,7 @@ def rsync(*args, delete=False, excludes=None):
         for ex in excludes:
             cmd.extend(['--exclude', ex])
     cmd.extend([str(a) for a in args])
-    print(f"+ {' '.join(cmd)}")
+    logging.info("+ %s", ' '.join(cmd))
     subprocess.run(cmd, check=True)
 
 
@@ -42,7 +43,10 @@ def main():
     parser.add_argument('-k', '--kernel', type=str, help='Specific kernel name or path to synchronize (skips full workspace sync)')
     parser.add_argument('--kernel-binary', default='bzImage', help='Kernel binary executable filename to search for')
     parser.add_argument('-p', '--remote-path', type=str, help='Override remote destination repository path')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose execution and debugging output')
     args = parser.parse_args()
+
+    logging.basicConfig(format='%(message)s', level=logging.INFO if args.verbose else logging.WARNING)
 
     user = getpass.getuser()
     remote_repo = args.remote_path if args.remote_path else f"/data/{user}/virt"
@@ -77,7 +81,12 @@ def main():
 
     print(f"=== Executing prep-host.sh on {args.machine} ===")
     prep_script = f"{remote_repo}/common/scripts/prep-host.sh"
-    subprocess.run(['ssh'] + SSH_OPTS + [ssh_host, prep_script], check=True)
+    cmd = ['ssh'] + SSH_OPTS + [ssh_host, prep_script]
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    if args.verbose or res.returncode != 0:
+        print(res.stdout, end='', file=sys.stderr if res.returncode != 0 else sys.stdout)
+    if res.returncode != 0:
+        sys.exit(res.returncode)
 
 
 if __name__ == '__main__':

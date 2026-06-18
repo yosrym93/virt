@@ -86,6 +86,20 @@ def calculate_memory():
 	return vm_bytes
 
 
+def qualify_vm_name(name):
+    vendor_path = pathlib.Path("/sys/class/dmi/id/sys_vendor")
+    if not vendor_path.exists() or "QEMU" not in vendor_path.read_text():
+        return name
+
+    product_path = pathlib.Path("/sys/class/dmi/id/product_name")
+    if not product_path.exists():
+        logging.error("Running inside QEMU guest, but SMBIOS product_name table is missing.")
+        sys.exit(1)
+
+    parent_name = product_path.read_text().strip()
+    return f"{parent_name}-{name}" if parent_name else name
+
+
 def cmd_kill(args):
     res = subprocess.run(['pkill', '-f', f'product={args.name}'])
     if res.returncode == 0:
@@ -230,6 +244,7 @@ def main():
     ssh_parser.set_defaults(func=cmd_ssh)
 
     args = parser.parse_args()
+    args.name = qualify_vm_name(args.name)
     logging.basicConfig(format='%(message)s', level=logging.INFO if args.verbose else logging.WARNING)
     args.func(args)
 

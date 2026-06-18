@@ -30,3 +30,20 @@ if ! ip link show dev br_virt >/dev/null 2>&1; then
 	ip link add br_virt type bridge
 fi
 ip link set br_virt up
+
+COMMON_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+TARGET_BIN="/usr/local/bin"
+
+# Symlink all common tools into /usr/local/bin for global non-interactive access
+mkdir -p "${TARGET_BIN}"
+for sub in scripts aliases bin qemu; do
+    dir="${COMMON_DIR}/${sub}"
+    if [ -d "$dir" ]; then
+        for item in "${dir}"/*; do
+            if [ -f "$item" ]; then
+                chmod +x "$item" 2>/dev/null || true
+                ln -sf "$item" "${TARGET_BIN}/$(basename "$item")"
+            fi
+        done
+    fi
+done

@@ -30,14 +30,6 @@ if grep -ac virt_kmods /sys/bus/virtio/drivers/9pnet_virtio/virtio*/mount_tag; t
   mount -t 9p -o trans=virtio virt_kmods $modules_dir
 fi
 
-# Add /virt/common/aliases, /virt/common/scripts, and /virt/common/bin to $PATH in ~/.bashrc
-if ! grep -q "PATH=\"/virt/common/aliases:/virt/common/scripts:/virt/common/bin:\$PATH\"" ~/.bashrc; then
-        echo >> ~/.bashrc
-        echo "PATH=\"/virt/common/aliases:/virt/common/scripts:/virt/common/bin:\$PATH\"" >> ~/.bashrc
-        echo >> ~/.bashrc
-        source ~/.bashrc
-fi
-
 $PREP_COMMON
 
 # Enslave primary hardware NIC to br_virt and copy its MAC address to the bridge interface.

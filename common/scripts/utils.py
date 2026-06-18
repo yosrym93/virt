@@ -1,3 +1,4 @@
+import logging
 import pathlib
 
 
@@ -15,7 +16,7 @@ def get_basedir():
                 basedir = current_path
                 return basedir
 
-        print('Failed to find the base directory')
+        logging.error('Failed to find the base directory')
         exit(-1)
     return basedir
 
@@ -29,12 +30,12 @@ def find_path(pattern, is_dir, desc, parent=get_basedir(), allow_dup=False, allo
             results.append(p)
 
     if (len(results) == 0 and not allow_zero) or (len(results) > 1 and not allow_dup):
-        print('Expected to find one {}, found {}'.format(desc, len(results)))
+        logging.error('Expected to find one %s, found %d', desc, len(results))
         if results:
-            print(results)
+            logging.error('%s', results)
         exit(-1)
     elif results:
-        print('Found {} at {}'.format(desc, results[0]))
+        logging.info('Found %s at %s', desc, results[0])
         return results[0]
     else:
         return None

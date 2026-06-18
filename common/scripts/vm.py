@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import logging
 import math
 import pathlib
 import os
@@ -90,7 +91,7 @@ def calculate_memory():
 	elif vm_bytes > (1 << 20):
 		vm_bytes = str(vm_bytes >> 20) + 'M'
 
-	print('Setting VM memory size to {}'.format(vm_bytes))
+	logging.info('Setting VM memory size to %s', vm_bytes)
 	return vm_bytes
 
 
@@ -112,7 +113,7 @@ def cmd_ssh(args):
     target = f"root@{ipv6}%{iface}"
     common_dir = find_common_dir()
     identity_file = pathlib.Path(common_dir) / 'ssh' / 'ida_rsa'
-    ssh_cmd = ['ssh', '-i', str(identity_file), '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'LogLevel=ERROR', target] + args.ssh_args
+    ssh_cmd = ['ssh', '-q', '-i', str(identity_file), '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'LogLevel=QUIET', '-o', 'IPQoS=none', target] + args.ssh_args
     os.execvp('ssh', ssh_cmd)
 
 
@@ -199,6 +200,7 @@ def cmd_run(args):
 def main():
     parser = argparse.ArgumentParser(prog='vm.py',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose debugging output')
     subparsers = parser.add_subparsers(dest='subcommand', help='Subcommands')
     subparsers.required = True
 
@@ -231,6 +233,7 @@ def main():
     ssh_parser.set_defaults(func=cmd_ssh)
 
     args = parser.parse_args()
+    logging.basicConfig(format='%(message)s', level=logging.INFO if args.verbose else logging.WARNING)
     args.func(args)
 
 

@@ -19,6 +19,7 @@ COMMON_DIR_NAME = 'common'
 KERNEL_BINARY_NAME = 'bzImage'
 QEMU_BINARY_NAME = 'qemu-system-x86_64'
 BRIDGE_IFACE_NAME = 'br_virt'
+SSH_IDENTITY_FILE_NAME = 'ida_rsa'
 
 DEFAULT_MEMORY_BYTES = (4 << 30) # 4G
 
@@ -56,6 +57,10 @@ def find_qemu_binary():
 
 def find_common_dir():
     return utils.find_path(COMMON_DIR_NAME, True, 'Common dir', recursive=False)
+
+
+def find_ssh_identity_file():
+    return utils.find_path(SSH_IDENTITY_FILE_NAME, False, 'SSH identity file')
 
 
 def calculate_memory():
@@ -111,8 +116,7 @@ def cmd_kill(args):
 def cmd_ssh(args):
     ipv6 = vmaddr.vm_name_to_ipv6_local(args.name)
     target = f"root@{ipv6}%{BRIDGE_IFACE_NAME}"
-    common_dir = find_common_dir()
-    identity_file = pathlib.Path(common_dir) / 'ssh' / 'ida_rsa'
+    identity_file = find_ssh_identity_file()
     ssh_cmd = ['ssh']
     if args.verbose:
         ssh_cmd.append('-v')

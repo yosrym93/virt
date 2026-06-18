@@ -199,7 +199,8 @@ def cmd_run(args):
 def main():
     parser = argparse.ArgumentParser(prog='vm.py',
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    subparsers = parser.add_subparsers(dest='subcommand', required=True, help='Subcommands')
+    subparsers = parser.add_subparsers(dest='subcommand', help='Subcommands')
+    subparsers.required = True
 
     run_parser = subparsers.add_parser('run', help='Run a VM',
                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)

@@ -95,6 +95,14 @@ def calculate_memory():
 	return vm_bytes
 
 
+def cmd_kill(args):
+    res = subprocess.run(['pkill', '-f', f'product={args.name}'])
+    if res.returncode == 0:
+        print(f"Terminated VM '{args.name}'")
+    else:
+        print(f"No running QEMU process found for VM '{args.name}'")
+
+
 def cmd_run(args):
     memory = args.memory if args.memory else calculate_memory()
     bios_dir = find_bios_dir()
@@ -200,6 +208,10 @@ def main():
     run_parser.add_argument('--dry-run', action='store_true', help='Create the QEMU command only')
     run_parser.add_argument('--extra-args', type=str, help='Extra args to pass to QEMU')
     run_parser.set_defaults(func=cmd_run)
+
+    kill_parser = subparsers.add_parser('kill', help='Kill a running VM')
+    kill_parser.add_argument('name', type=str, help='VM name')
+    kill_parser.set_defaults(func=cmd_kill)
 
     args = parser.parse_args()
     args.func(args)

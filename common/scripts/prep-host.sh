@@ -16,9 +16,13 @@ fi
 
 $PREP_COMMON
 
-# Link Toybox applets for host KUT test environments
+# Optionally link Toybox applets for host KUT test environments if present
 TOYBOX="${TARGET_BIN}/toybox"
-TOYBOX_UTILS=( timeout base64 )
-for cmd in "${TOYBOX_UTILS[@]}"; do
-    sudo ln -sf "${TOYBOX}" "${TARGET_BIN}/$cmd"
-done
+if [ -f "${TOYBOX}" ]; then
+    TOYBOX_UTILS=( timeout base64 )
+    for cmd in "${TOYBOX_UTILS[@]}"; do
+        if ! which "$cmd" > /dev/null 2>&1; then
+            sudo ln -sf "${TOYBOX}" "${TARGET_BIN}/$cmd"
+        fi
+    done
+fi

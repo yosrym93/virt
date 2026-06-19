@@ -106,7 +106,7 @@ def qualify_vm_name(name):
     return f"{parent_name}-{name}" if parent_name else name
 
 
-def check_vm_running(name):
+def get_vm_pid(name):
     res = subprocess.run(['pgrep', '-f', f'product={name}([, ]|$)'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     if res.returncode != 0:
         logging.error("Error: VM '%s' is not running.", name)
@@ -121,13 +121,12 @@ def check_vm_running(name):
 
 
 def cmd_kill(args):
-    pid = check_vm_running(args.name)
+    pid = get_vm_pid(args.name)
     os.kill(pid, signal.SIGTERM)
     print(f"Terminated VM '{args.name}'")
 
 
 def cmd_ssh(args):
-    check_vm_running(args.name)
     ipv6 = vmaddr.vm_name_to_ipv6_local(args.name)
     target = f"root@{ipv6}%{BRIDGE_IFACE_NAME}"
     identity_file = find_ssh_identity_file()
@@ -145,7 +144,6 @@ def expand_scp_target(arg):
         return arg
 
     vm_name, path_part = arg.split(':', 1)
-    check_vm_running(vm_name)
     qualified_name = qualify_vm_name(vm_name)
     ipv6 = vmaddr.vm_name_to_ipv6_local(qualified_name)
     return f"root@[{ipv6}%{BRIDGE_IFACE_NAME}]:{path_part}"

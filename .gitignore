@@ -1,5 +1,6 @@
 # Large binary disk images
-common/base_imgs/
+common/base_imgs/*
+!common/base_imgs/.keep
 common/imgs/
 
 # Bundled local QEMU binaries and firmware
@@ -10,5 +11,11 @@ __pycache__/
 *.pyc
 
 # Prebuilt and test binary directories
-common/bin/
-common/tests/
+common/bin/*
+!common/bin/.keep
+common/tests/*
+!common/tests/.keep
+
+# Generated SSH test identities
+common/ssh/*
+!common/ssh/.keep

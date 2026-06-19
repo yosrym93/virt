@@ -16,11 +16,21 @@
 ## Setup & Repository Map
 
 - `common/`: Shared runtime payload mirrored across development workstations, test hosts, and guest VMs.
-  - `common/scripts/`: Core orchestration tools (`vm.py`, `dsync.py`, `prep-host.sh`, `prep-vm.sh`).
+  - `common/scripts/`: Core orchestration tools (`vm.py`, `dsync.py`, `prep-host.sh`, `prep-vm.sh`, `ifup.sh`, `vmaddr.py`).
   - `common/aliases/`: Shorthand CLI wrappers linked into `/usr/local/bin` (`vmr`, `vms`, `vmk`, `vmcp`).
   - `common/base_imgs/`: Target directory where prepared `.qcow2` virtual machine disk images must reside.
   - `common/ssh/`: Target directory for generated test SSH keys (`ida_rsa`, `ida_rsa.pub`).
-- `scripts/`: Workstation preparation utilities (`prep_base_image.py`).
+  - `common/bin/`: Static helper tools (e.g., `toybox`) and test binaries.
+  - `common/qemu/`: Statically linked QEMU binary (`qemu-system-x86_64`) and firmware (`pc-bios/`).
+  - `common/tests/`: Automated test scripts and reproducers.
+- `scripts/`: Workstation image preparation tools and guest initialization drop-ins (`prep_base_image.py`, `virt_init.sh`).
+
+## External Binary Dependencies
+
+`virt` executes standalone test environments and offline VMs by bundling static binaries inside `common/`:
+
+- **QEMU & BIOS (`common/qemu/`)**: Must contain a statically linked QEMU executable (`qemu-system-x86_64`) and its corresponding `pc-bios/` firmware directory.
+- **Helper Utilities (`common/bin/`) (Optional)**: Can contain optional static utilities such as `toybox`. If present, `prep-host.sh` automatically links fallback applets (`timeout`, `base64`) on stripped-down test machines.
 
 ## Base Workflow Guide
 

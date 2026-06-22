@@ -19,3 +19,6 @@ common/tests/*
 # Generated SSH test identities
 common/ssh/*
 !common/ssh/.keep
+
+# Runtime-generated symlink
+common/share/

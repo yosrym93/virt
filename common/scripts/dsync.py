@@ -34,6 +34,7 @@ def main():
     parser.add_argument('-k', '--kernel', type=str, help='Specific kernel name or path to synchronize (skips full workspace sync)')
     parser.add_argument('-ks', '--kernel-search-dir', default='~/builds', help='Parent directory to search for kernel builds')
     parser.add_argument('--kernel-binary', default='bzImage', help='Kernel binary executable filename to search for')
+    parser.add_argument('-i', '--include-image', action='store_true', help='Include VM base disk images in synchronization')
     parser.add_argument('-p', '--remote-path', type=str, help='Override remote destination repository path')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose execution and debugging output')
     args = parser.parse_args()
@@ -69,7 +70,8 @@ def main():
 
     common_dir = utils.find_path('common', True, 'Common directory')
     repo_root = pathlib.Path(common_dir).resolve().parent
-    rsync(repo_root / 'common', f"{ssh_host}:{remote_repo}/", delete=False)
+    excludes = [] if args.include_image else ['*.qcow2', '*.img', '*.raw']
+    rsync(repo_root / 'common', f"{ssh_host}:{remote_repo}/", delete=False, excludes=excludes)
 
     print(f"=== Executing prep-host.sh on {args.machine} ===")
     prep_script = f"{remote_repo}/common/scripts/prep-host.sh"

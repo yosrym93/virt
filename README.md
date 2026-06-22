@@ -48,9 +48,13 @@ scripts/prep_base_image.py -i ubuntu.img -o common/base_imgs/ubuntu_base.qcow2 -
 **What this does**: Converts the raw cloud image to `.qcow2`, uninstalls conflicting cloud-init services, injects your generated SSH public key for root login, and sets up serial console autologin. Prepared disk images must be placed in `common/base_imgs/`.
 
 ### 3. Synchronize to Remote Host (Optional)
-If running tests on a separate remote machine from your workstation, use `dsync.py` to transfer workspace scripts and images:
+If running tests on a separate remote machine from your workstation, use `dsync.py` to transfer workspace scripts:
 ```bash
-common/scripts/dsync.py -m $HOSTNAME
+# Sync strictly workspace scripts and tools (fast, omits 1GB+ base images):
+common/scripts/dsync.py test_host
+
+# To also transfer prepared disk images (.qcow2) in common/base_imgs/:
+common/scripts/dsync.py -i test_host
 ```
 *(Skip this step if developing and testing on the same machine).*
 

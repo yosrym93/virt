@@ -93,6 +93,7 @@ def calculate_memory():
 
 
 def qualify_vm_name(name):
+    """Derive nested VM uniqueness by using the parent hostname as a prefix."""
     vendor_path = pathlib.Path("/sys/class/dmi/id/sys_vendor")
     if not vendor_path.exists() or "QEMU" not in vendor_path.read_text():
         return name
@@ -107,6 +108,7 @@ def qualify_vm_name(name):
 
 
 def get_vm_pid(name):
+    """Locate local QEMU process PID using the VM name (used as the product_name) """
     res = subprocess.run(['pgrep', '-f', f'product={name}([, ]|$)'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     if res.returncode != 0:
         logging.error("Error: VM '%s' is not running.", name)
@@ -174,7 +176,8 @@ def cmd_run(args):
             '-smp'		, str(args.smp),
             '-m'		, memory,
             '-L'		, str(bios_dir),
-            # Pass VM name in SMBIOS DMI tables so guest virt_init.sh can dynamically set hostname
+            # Pass VM name in SMBIOS DMI tables, used by the guest to set the hostname
+            # and used by this script to find VM PIDs and parent VM names.
             '-smbios'	, f'type=1,product={args.name}',
             '-drive'	, 'file={},format={},if=none,id=drive'.format(img, args.format),
             '-device'	, 'virtio-blk-pci,drive=drive,id=virtblk',

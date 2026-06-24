@@ -10,6 +10,7 @@ import shlex
 import signal
 import sys
 import termios
+import time
 
 import vmaddr
 import utils
@@ -92,10 +93,15 @@ def calculate_memory():
 	return vm_bytes
 
 
+def in_vm():
+    """Return True if running inside a QEMU guest VM."""
+    vendor_path = pathlib.Path("/sys/class/dmi/id/sys_vendor")
+    return vendor_path.exists() and "QEMU" in vendor_path.read_text()
+
+
 def qualify_vm_name(name):
     """Derive nested VM uniqueness by using the parent hostname as a prefix."""
-    vendor_path = pathlib.Path("/sys/class/dmi/id/sys_vendor")
-    if not vendor_path.exists() or "QEMU" not in vendor_path.read_text():
+    if not in_vm():
         return name
 
     product_path = pathlib.Path("/sys/class/dmi/id/product_name")
@@ -111,19 +117,20 @@ def get_vm_pid(name):
     """Locate local QEMU process PID using the VM name (used as the product_name) """
     res = subprocess.run(['pgrep', '-f', f'product={name}([, ]|$)'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
     if res.returncode != 0:
-        logging.error("Error: VM '%s' is not running.", name)
-        sys.exit(1)
+        return None
 
     pids = [int(p) for p in res.stdout.split()]
-    if len(pids) > 1:
-        logging.error("Error: Multiple QEMU processes found for VM '%s': %s", name, pids)
-        sys.exit(1)
-
-    return pids[0]
+    # When QEMU daemonizes (-daemonize), the initial parent forks a background child and exits.
+    # For a brief window before the parent is reaped, pgrep may match both. Since child PIDs
+    # are sequentially higher than parent PIDs, max() deterministically selects the daemon.
+    return max(pids)
 
 
 def cmd_kill(args):
     pid = get_vm_pid(args.name)
+    if not pid:
+        logging.error("Error: VM '%s' is not running.", args.name)
+        sys.exit(1)
     os.kill(pid, signal.SIGTERM)
     print(f"Terminated VM '{args.name}'")
 
@@ -162,6 +169,31 @@ def cmd_scp(args):
     expanded_args = [expand_scp_target(a) for a in args.scp_args]
     scp_cmd.extend(['-i', str(identity_file), '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'IPQoS=none'] + expanded_args)
     os.execvp('scp', scp_cmd)
+
+
+def pin_vm_vcpus(name, smp, start_cpu=0):
+    """Pin QEMU vCPU threads 1:1 to physical host CPUs."""
+    pid = get_vm_pid(name)
+    if not pid:
+        return
+
+    tids = []
+    deadline = time.monotonic() + 5.0
+    while time.monotonic() < deadline:
+        try:
+            tids = sorted(int(p.name) for p in pathlib.Path(f'/proc/{pid}/task').iterdir())
+            if len(tids) > smp:
+                break
+        except Exception:
+            pass
+        time.sleep(0.05)
+
+    total_cpus = os.cpu_count() or 1
+    for i, tid in enumerate(tids[1 : smp + 1]):
+        try:
+            os.sched_setaffinity(tid, {(start_cpu + i) % total_cpus})
+        except Exception:
+            pass
 
 
 def cmd_run(args):
@@ -241,7 +273,13 @@ def cmd_run(args):
 
     old_termios = save_host_termios()
     try:
-        subprocess.run(command)
+        proc = subprocess.Popen(command)
+        if args.daemonize:
+            proc.wait()
+        if not in_vm():
+            pin_vm_vcpus(args.name, args.smp, args.pin_start_cpu)
+        if not args.daemonize:
+            proc.wait()
     finally:
         print(VT100_RESET, end='', flush=True)
         restore_host_termios(old_termios)
@@ -275,6 +313,7 @@ def main():
     run_parser.add_argument('--no-kvm', action='store_true', help='Do not use KVM')
     run_parser.add_argument('--dry-run', action='store_true', help='Create the QEMU command only')
     run_parser.add_argument('--extra-args', type=str, help='Extra args to pass to QEMU')
+    run_parser.add_argument('--pin-start-cpu', type=int, default=0, help='Starting host CPU index to pin vCPUs')
     run_parser.set_defaults(func=cmd_run)
 
     kill_parser = subparsers.add_parser('kill', parents=[base_parser], help='Kill a running VM')

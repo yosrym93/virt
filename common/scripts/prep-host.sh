@@ -16,6 +16,12 @@ fi
 
 $PREP_COMMON
 
+# Symlink QEMU bios files to a path that is checked by QEMU by default.
+# This is needed for invocations to QEMU through scripts (e.g. kvm-unit-tests)
+# that do not allow specifying a path to the bios files.
+mkdir -p "${COMMON_DIR}/share"
+ln -sf ../qemu/pc-bios "${COMMON_DIR}/share/qemu"
+
 # Optionally link Toybox applets for host KUT test environments if present
 TOYBOX="${TARGET_BIN}/toybox"
 if [ -f "${TOYBOX}" ]; then

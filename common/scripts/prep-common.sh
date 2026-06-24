@@ -48,8 +48,4 @@ for sub in scripts aliases bin qemu; do
     fi
 done
 
-# Symlink QEMU bios files to a path that is checked by QEMU by default.
-# This is needed for invocations to QEMU through scripts (e.g. kvm-unit-tests)
-# that do not allow specifying a path to the bios files.
-mkdir -p "${COMMON_DIR}/share"
-ln -sf ../qemu/pc-bios "${COMMON_DIR}/share/qemu"
+

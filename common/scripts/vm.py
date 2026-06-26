@@ -144,7 +144,14 @@ def cmd_ssh(args):
         ssh_cmd.append('-v')
     else:
         ssh_cmd.extend(['-q', '-o', 'LogLevel=QUIET'])
-    ssh_cmd.extend(['-i', str(identity_file), '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'IPQoS=none', target] + args.ssh_args)
+    ssh_cmd.extend([
+        '-i', str(identity_file),
+        '-o', f'ConnectTimeout={args.timeout}',
+        '-o', 'StrictHostKeyChecking=no',
+        '-o', 'UserKnownHostsFile=/dev/null',
+        '-o', 'IPQoS=none',
+        target,
+    ] + args.ssh_args)
     os.execvp('ssh', ssh_cmd)
 
 
@@ -167,7 +174,13 @@ def cmd_scp(args):
         scp_cmd.extend(['-q', '-o', 'LogLevel=QUIET'])
 
     expanded_args = [expand_scp_target(a) for a in args.scp_args]
-    scp_cmd.extend(['-i', str(identity_file), '-o', 'StrictHostKeyChecking=no', '-o', 'UserKnownHostsFile=/dev/null', '-o', 'IPQoS=none'] + expanded_args)
+    scp_cmd.extend([
+        '-i', str(identity_file),
+        '-o', f'ConnectTimeout={args.timeout}',
+        '-o', 'StrictHostKeyChecking=no',
+        '-o', 'UserKnownHostsFile=/dev/null',
+        '-o', 'IPQoS=none',
+    ] + expanded_args)
     os.execvp('scp', scp_cmd)
 
 
@@ -321,6 +334,7 @@ def main():
     kill_parser.set_defaults(func=cmd_kill)
 
     ssh_parser = subparsers.add_parser('ssh', parents=[base_parser], help='SSH into a running VM')
+    ssh_parser.add_argument('--timeout', type=int, default=15, help='SSH connection timeout in seconds')
     ssh_parser.add_argument('name', type=str, help='VM name')
     ssh_parser.add_argument('ssh_args', nargs=argparse.REMAINDER, help='Extra SSH arguments')
     ssh_parser.set_defaults(func=cmd_ssh)
@@ -336,6 +350,7 @@ def main():
                                        formatter_class=argparse.RawDescriptionHelpFormatter,
                                        help='SCP files to/from a running VM',
                                        description=scp_desc)
+    scp_parser.add_argument('--timeout', type=int, default=15, help='SCP connection timeout in seconds')
     scp_parser.add_argument('scp_args', nargs=argparse.REMAINDER, help='Extra SCP arguments')
     scp_parser.set_defaults(func=cmd_scp)
 

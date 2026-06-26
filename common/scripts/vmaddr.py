@@ -18,7 +18,7 @@ def vm_name_to_mac(vm_name):
 
     # Convert the CRC32 integer to an 8-character hexadecimal string
     crc32_hex = hex(crc32_int)[2:]  # Remove the "0x" prefix
-    crc32_hex = crc32_hex[-8:]  # Take the last 8 hex digits
+    crc32_hex = crc32_hex.zfill(8)  # Pad with leading zeros to 8 chars
 
 
     # Format the MAC address string

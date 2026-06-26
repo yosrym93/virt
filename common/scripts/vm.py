@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import re
 import logging
 import math
 import pathlib
@@ -124,6 +125,30 @@ def get_vm_pid(name):
     # For a brief window before the parent is reaped, pgrep may match both. Since child PIDs
     # are sequentially higher than parent PIDs, max() deterministically selects the daemon.
     return max(pids)
+
+
+def get_running_vms():
+    """Find and return list of (pid, vm_name) for all running QEMU VMs."""
+    res = subprocess.run(['pgrep', '-f', 'qemu-system'], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True)
+    if res.returncode != 0:
+        return []
+    vms = []
+    for pid in res.stdout.split():
+        cmdline = (pathlib.Path('/proc') / pid / 'cmdline').read_text().replace('\x00', ' ')
+        name = re.search(r'product=([^, ]+)', cmdline).group(1)
+        vms.append((pid, name))
+    return vms
+
+
+def cmd_list(args):
+    vms = get_running_vms()
+    if not vms:
+        print("No running VMs found.")
+        return
+    print(f"{'PID':<8} {'VM Name':<30}")
+    print("-" * 40)
+    for pid, name in sorted(vms, key=lambda x: x[1]):
+        print(f"{pid:<8} {name:<30}")
 
 
 def cmd_kill(args):
@@ -328,6 +353,9 @@ def main():
     run_parser.add_argument('--extra-args', type=str, help='Extra args to pass to QEMU')
     run_parser.add_argument('--pin-start-cpu', type=int, default=0, help='Starting host CPU index to pin vCPUs')
     run_parser.set_defaults(func=cmd_run)
+
+    list_parser = subparsers.add_parser('list', parents=[base_parser], help='List all running VMs')
+    list_parser.set_defaults(func=cmd_list)
 
     kill_parser = subparsers.add_parser('kill', parents=[base_parser], help='Kill a running VM')
     kill_parser.add_argument('name', type=str, help='VM name')

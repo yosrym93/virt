@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Build a kernel out-of-tree with make, mainly for running in a VM.
 
 set -e
@@ -64,12 +64,22 @@ make -s -j $(nproc) LLVM=1 O=$KERNEL_DIR INSTALL_MOD_PATH=$MODULES_DIR modules_i
 if $selftests; then
 	echo "Building selftests"
 	make -s -j $(nproc) LLVM=1 O=$KERNEL_DIR headers_install
+
+	# Workaround: 'make install' always overwrites all files (updating mtimes).
+	# Install to temp first, then rsync to update only changed files in final dir.
+	TMP_INSTALL_DIR=$(mktemp -d -t kselftest-install.XXXXXX)
+	trap 'rm -rf "$TMP_INSTALL_DIR"' EXIT
+
 	make -s -j $(nproc) -C tools/testing/selftests TARGETS=kvm \
 		EXTRA_CFLAGS="-static -gdwarf-4" LLVM=1 \
 		O=$KERNEL_DIR \
 		KHDR_INCLUDES="-isystem $KERNEL_DIR/usr/include" \
 		INSTALL_HDR_PATH="$KERNEL_DIR/usr" \
-		INSTALL_PATH=$SELFTESTS_DIR \
+		INSTALL_PATH="$TMP_INSTALL_DIR" \
 		install
+
+	echo "Syncing selftests to $SELFTESTS_DIR (preserving unchanged files)"
+	mkdir -p "$SELFTESTS_DIR"
+	rsync -ac --no-t --delete "$TMP_INSTALL_DIR/" "$SELFTESTS_DIR/"
 fi
 

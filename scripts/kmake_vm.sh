@@ -43,10 +43,10 @@ if [[ -z $config && -f "$KERNEL_DIR/.config" ]]; then
 else
 	if [[ $config == "all" ]]; then
 		config_file=$ALL_CONFIG
-	elif [[ -n $config ]]; then
-		config_file=$config
-	else
+	elif [[ -z $config  || $config == "vm" ]]; then
 		config_file=$VM_CONFIG
+	else
+		config_file=$config
 	fi
 
 	echo "Using $config_file"

@@ -239,6 +239,7 @@ def cmd_run(args):
     bios_dir = find_bios_dir()
     img = args.img if args.img else find_base_image()
     mac_address = vmaddr.vm_name_to_mac(args.name)
+    accelerator='kvm,' if not args.no_kvm else ''
 
     qemu_args = [
             '-machine'	, str(args.machine),
@@ -246,6 +247,7 @@ def cmd_run(args):
             '-smp'		, str(args.smp),
             '-m'		, memory,
             '-L'		, str(bios_dir),
+            '-accel'    , f'{accelerator}kernel-irqchip=split'
             # Pass VM name in SMBIOS DMI tables, used by the guest to set the hostname
             # and used by this script to find VM PIDs and parent VM names.
             '-smbios'	, f'type=1,product={args.name}',
@@ -257,9 +259,6 @@ def cmd_run(args):
         qemu_args += ['-snapshot']
 
     qemu_args += ['-daemonize'] if args.daemonize else ['-nographic']
-
-    if not args.no_kvm:
-        qemu_args += ['-enable-kvm']
 
     if args.network == 'tap':
         ifname = f"tap_{args.name}"[:15]

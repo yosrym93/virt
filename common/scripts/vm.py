@@ -247,7 +247,7 @@ def cmd_run(args):
             '-smp'		, str(args.smp),
             '-m'		, memory,
             '-L'		, str(bios_dir),
-            '-accel'    , f'{accelerator}kernel-irqchip=split'
+            '-accel'    , f'{accelerator}kernel-irqchip=split',
             # Pass VM name in SMBIOS DMI tables, used by the guest to set the hostname
             # and used by this script to find VM PIDs and parent VM names.
             '-smbios'	, f'type=1,product={args.name}',

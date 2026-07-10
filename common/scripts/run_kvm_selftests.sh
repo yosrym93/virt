@@ -5,10 +5,10 @@ DIR="${DIR:=selftests}"
 
 # Tests to skip entirely
 declare -A SKIP_TESTS=(
-	["nx_huge_pages_test"]=1
-	["hardware_disable_test"]=1
-	["config"]=1
-	["settings"]=1
+	["nx_huge_pages_test"]=1 # Should be run through wrapper
+	["hardware_disable_test"]=1 # Takes way too long
+	["config"]=1 # Build artifact, not an actual test
+	["settings"]=1 # Build artifact, not an actual test
 )
 
 # Tests that need to be run in nested mode (with "-n") as well

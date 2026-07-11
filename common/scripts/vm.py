@@ -65,35 +65,6 @@ def find_common_dir():
 def find_ssh_identity_file():
     return utils.find_path(SSH_IDENTITY_FILE_NAME, False, 'SSH identity file')
 
-
-def calculate_memory():
-	# Find the amount of free memory
-	free_bytes = None
-	with open('/proc/meminfo', 'r') as file:
-		for line in file:
-			if 'MemFree' in line:
-				free_bytes = int(line.split()[1]) << 10
-	
-	if free_bytes is None:
-		print('Could not get the amount of free memory')
-		exit(-1)
-
-	# If the default size cannot be used, find the nearest power of 2.
-	# Using powers of 2 keeps the memory sizes non-arbitrary.
-	vm_bytes = DEFAULT_MEMORY_BYTES
-	if vm_bytes > free_bytes:
-		vm_bytes = int(2 ** math.log2(free_bytes))
-
-	# Convert to string format
-	if vm_bytes > (1 << 30):
-		vm_bytes = str(vm_bytes >> 30) + 'G'
-	elif vm_bytes > (1 << 20):
-		vm_bytes = str(vm_bytes >> 20) + 'M'
-
-	logging.info('Setting VM memory size to %s', vm_bytes)
-	return vm_bytes
-
-
 def in_vm():
     """Return True if running inside a QEMU guest VM."""
     vendor_path = pathlib.Path("/sys/class/dmi/id/sys_vendor")
@@ -235,7 +206,6 @@ def pin_vm_vcpus(name, smp, start_cpu=0):
 
 
 def cmd_run(args):
-    memory = args.memory if args.memory else calculate_memory()
     bios_dir = find_bios_dir()
     img = args.img if args.img else find_base_image()
     mac_address = vmaddr.vm_name_to_mac(args.name)
@@ -243,9 +213,9 @@ def cmd_run(args):
 
     qemu_args = [
             '-machine'	, str(args.machine),
-            '-cpu'		, str(args.cpu),
+            '-cpu'		, args.cpu,
             '-smp'		, str(args.smp),
-            '-m'		, memory,
+            '-m'		, args.memory,
             '-L'		, str(bios_dir),
             '-accel'    , f'{accelerator}kernel-irqchip=split',
             # Pass VM name in SMBIOS DMI tables, used by the guest to set the hostname
@@ -335,12 +305,12 @@ def main():
                                        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     run_parser.add_argument('name', type=str, help='VM name')
     run_parser.add_argument('-i', '--img', type=str, help='Path to image')
-    run_parser.add_argument('-m', '--memory', type=str, help='Memory size')
+    run_parser.add_argument('-m', '--memory', type=str, default='32G', help='Memory size')
     run_parser.add_argument('-k', '--kernel', type=str, help='Specific kernel name or path to run')
     run_parser.add_argument('-ks', '--kernel-search-dir', default=None, help='Parent directory to search for kernel builds (default: common directory)')
     run_parser.add_argument('--kernel-binary', default='bzImage', help='Kernel binary executable filename')
     run_parser.add_argument('-cmd', '--kernel-cmdline', type=str, default='', help='Kernel command line')
-    run_parser.add_argument('-s', '--smp', type=int, default=2, help='Number of vCPUs')
+    run_parser.add_argument('-s', '--smp', type=int, default=4, help='Number of vCPUs')
     run_parser.add_argument('-c', '--cpu', type=str, default='host', help='QEMU "-cpu" arg')
     run_parser.add_argument('-n', '--network', type=str, default='tap', help='VM network type')
     run_parser.add_argument('-p', '--persistent', action='store_true', help='Run VM persistently (do not use -snapshot)')

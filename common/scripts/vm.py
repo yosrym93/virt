@@ -143,6 +143,8 @@ def cmd_ssh(args):
     ssh_cmd.extend([
         '-i', str(identity_file),
         '-o', f'ConnectTimeout={args.timeout}',
+        '-o', 'ServerAliveInterval=15',
+        '-o', 'ServerAliveCountMax=3',
         '-o', 'StrictHostKeyChecking=no',
         '-o', 'UserKnownHostsFile=/dev/null',
         '-o', 'IPQoS=none',

@@ -46,16 +46,19 @@ def restore_host_termios(old_termios):
 
 
 def find_bios_dir():
-    return utils.find_path(BIOS_DIR_NAME, True, 'bios dir')
+    common_dir = find_common_dir()
+    return utils.find_path(BIOS_DIR_NAME, True, 'bios dir', parent=common_dir)
 
 
 def find_base_image():
-    base_imgs_dir = utils.find_path(BASE_IMGS_DIR_NAME, True, 'base images dir')
+    common_dir = find_common_dir()
+    base_imgs_dir = utils.find_path(BASE_IMGS_DIR_NAME, True, 'base images dir', parent=common_dir)
     return utils.find_path('*.qcow2', False, 'base qcow2 image', parent=base_imgs_dir, recursive=False)
 
 
 def find_qemu_binary():
-    return utils.find_path(QEMU_BINARY_NAME, False, 'QEMU binary')
+    common_dir = find_common_dir()
+    return utils.find_path(QEMU_BINARY_NAME, False, 'QEMU binary', parent=common_dir)
 
 
 def find_common_dir():
@@ -63,7 +66,8 @@ def find_common_dir():
 
 
 def find_ssh_identity_file():
-    return utils.find_path(SSH_IDENTITY_FILE_NAME, False, 'SSH identity file')
+    common_dir = find_common_dir()
+    return utils.find_path(SSH_IDENTITY_FILE_NAME, False, 'SSH identity file', parent=common_dir)
 
 def in_vm():
     """Return True if running inside a QEMU guest VM."""

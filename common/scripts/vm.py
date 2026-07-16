@@ -289,7 +289,7 @@ def cmd_run(args):
         proc = subprocess.Popen(command)
         if args.daemonize:
             proc.wait()
-        if not in_vm():
+        if not in_vm() and args.pin_start_cpu >= 0:
             pin_vm_vcpus(args.name, args.smp, args.pin_start_cpu)
         if not args.daemonize:
             proc.wait()
@@ -326,7 +326,7 @@ def main():
     run_parser.add_argument('--no-kvm', action='store_true', help='Do not use KVM')
     run_parser.add_argument('--dry-run', action='store_true', help='Create the QEMU command only')
     run_parser.add_argument('--extra-args', type=str, help='Extra args to pass to QEMU')
-    run_parser.add_argument('--pin-start-cpu', type=int, default=0, help='Starting host CPU index to pin vCPUs')
+    run_parser.add_argument('--pin-start-cpu', type=int, default=-1, help='Starting host CPU index to pin vCPUs (-1 to disable)')
     run_parser.set_defaults(func=cmd_run)
 
     list_parser = subparsers.add_parser('list', parents=[base_parser], help='List all running VMs')

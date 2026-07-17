@@ -12,7 +12,7 @@ INIT_SCRIPT_NAME = 'virt_init.sh'
 INIT_SERVICE_NAME = 'virt-init.service'
 SERIAL_AUTOLOGIN_CONF_NAME = 'serial_autologin.conf'
 
-DEFAULT_PACKAGES = ['netperf']
+DEFAULT_PACKAGES = ['netperf', 'stress-ng']
 
 
 def check_required_tools():

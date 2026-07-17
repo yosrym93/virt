@@ -143,7 +143,7 @@ def cmd_ssh(args):
     if args.verbose:
         ssh_cmd.append('-v')
     else:
-        ssh_cmd.extend(['-q', '-o', 'LogLevel=QUIET'])
+        ssh_cmd.extend(['-o', 'LogLevel=ERROR'])
     ssh_cmd.extend([
         '-i', str(identity_file),
         '-o', f'ConnectTimeout={args.timeout}',
@@ -173,7 +173,7 @@ def cmd_scp(args):
     if args.verbose:
         scp_cmd.append('-v')
     else:
-        scp_cmd.extend(['-q', '-o', 'LogLevel=QUIET'])
+        scp_cmd.extend(['-o', 'LogLevel=ERROR'])
 
     expanded_args = [expand_scp_target(a) for a in args.scp_args]
     scp_cmd.extend([

@@ -4,15 +4,15 @@ OUT="out-$(date +%s)"
 DIR="${DIR:=selftests}"
 
 # Tests to skip entirely
-declare -A SKIP_TESTS=(
+declare -A TESTS_TO_SKIP=(
 	["nx_huge_pages_test"]=1 # Should be run through wrapper
 	["hardware_disable_test"]=1 # Takes way too long
 	["config"]=1 # Build artifact, not an actual test
 	["settings"]=1 # Build artifact, not an actual test
 )
 
-# Tests that need to be run in nested mode (with "-n") as well
-declare -A NESTED_TESTS=(
+# Tests that need to also be run in nested mode (with "-n")
+declare -A TESTS_WITH_NESTED_MODE=(
 	["dirty_log_perf_test"]=1
 	["stress_save_restore_pf_test"]=1
 )
@@ -77,13 +77,13 @@ function enter_cgroup_root() {
 enter_cgroup_root
 
 (for t in $(ls $DIR); do
-	if [[ -v SKIP_TESTS[$t] ]]; then
+	if [[ -v TESTS_TO_SKIP[$t] ]]; then
 		continue;
 	fi
 
 	run_test $t
 
-	if [[ -v NESTED_TESTS[$t] ]]; then
+	if [[ -v TESTS_WITH_NESTED_MODE[$t] ]]; then
 		run_test "$t -n"
 	fi
 done) 2>&1 | tee $OUT 

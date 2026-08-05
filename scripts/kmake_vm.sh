@@ -11,7 +11,7 @@ SELFTESTS_DIR="$BUILD_DIR/selftests"
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 REPO_DIR=$(dirname "$SCRIPT_DIR")
 VM_CONFIG="${VM_CONFIG:=$(find "$REPO_DIR" -name "vm.config" | head -n 1)}"
-ALL_CONFIG="${ALL_CONFIG:=$(find "$REPO_DIR" -name "all.config" | head -n 1)}"
+ALL_CONFIG="${ALL_CONFIG:=$(find "$REPO_DIR" -name "all.config.partial" | head -n 1)}"
 
 mkdir -p $KERNEL_DIR
 
@@ -42,16 +42,19 @@ if [[ -z $config && -f "$KERNEL_DIR/.config" ]]; then
 	echo "Reusing existing config at $KERNEL_DIR/.config"
 else
 	if [[ $config == "all" ]]; then
-		config_file=$ALL_CONFIG
-	elif [[ -z $config  || $config == "vm" ]]; then
-		config_file=$VM_CONFIG
+		echo "Merging $VM_CONFIG and $ALL_CONFIG"
+		LLVM=1 ./scripts/kconfig/merge_config.sh -O "$KERNEL_DIR" "$VM_CONFIG" "$ALL_CONFIG"
 	else
-		config_file=$config
-	fi
+		if [[ -z $config  || $config == "vm" ]]; then
+			config_file=$VM_CONFIG
+		else
+			config_file=$config
+		fi
 
-	echo "Using $config_file"
-	cp $config_file "$KERNEL_DIR/.config"
-	make olddefconfig LLVM=1 O="$KERNEL_DIR"
+		echo "Using $config_file"
+		cp $config_file "$KERNEL_DIR/.config"
+		make olddefconfig LLVM=1 O="$KERNEL_DIR"
+	fi
 fi
 
 echo "Building the kernel"
@@ -72,6 +75,7 @@ if $selftests; then
 
 	make -s -j $(nproc) -C tools/testing/selftests TARGETS=kvm \
 		EXTRA_CFLAGS="-static -gdwarf-4" LLVM=1 \
+		LDFLAGS="-fuse-ld=lld" \
 		O=$KERNEL_DIR \
 		KHDR_INCLUDES="-isystem $KERNEL_DIR/usr/include" \
 		INSTALL_HDR_PATH="$KERNEL_DIR/usr" \

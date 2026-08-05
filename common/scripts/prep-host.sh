@@ -32,3 +32,12 @@ if [ -f "${TOYBOX}" ]; then
         fi
     done
 fi
+
+# Setup /dev/sev with the correct dynamic minor number if SEV is supported
+SEV_MINOR=$(awk '$2 == "sev" {print $1}' /proc/misc)
+if [ -n "$SEV_MINOR" ]; then
+    echo "Setting up /dev/sev..."
+    sudo rm -f /dev/sev
+    sudo mknod /dev/sev c 10 "$SEV_MINOR"
+    sudo chmod 0660 /dev/sev
+fi
